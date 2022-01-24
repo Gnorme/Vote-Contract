@@ -1,22 +1,22 @@
 import {
-    u128,
     context,
     storage,
     PersistentVector,
+    PersistentMap,
     PersistentSet
 } from "near-sdk-as";
 
 type Timestamp = u64;
-type AccountId = string;
+export type AccountId = string;
 
 
 @nearBindgen
 export class Opponent {
-    vote_score: i32 = 0;
-    voters: Array<AccountId> = [];
     constructor(
         public title: string,
-        public data: string
+        public data: string,
+        public account: AccountId,
+        public vote_score: i32 = 0
     ) {}
 }
 
@@ -24,9 +24,14 @@ export class Opponent {
 export class Duel {
     created_at: Timestamp = context.blockTimestamp;
     constructor(
-        public opponents: PersistentVector<Opponent>,
+        public opponents: PersistentMap<AccountId, Opponent>
     ) {}
-    static create(opponents: PersistentVector<Opponent>): void {
+    static create(submitters: Array<AccountId>, titles: Array<string>, nfts: Array<string>, ): void {
+        const opponents = new PersistentMap<AccountId, Opponent>("o");
+        for (let i = 0; i < submitters.length; ++i) {
+            let op = new Opponent(titles[i], nfts[i], submitters[i])
+            opponents.set(submitters[i], op)
+        }
         const duel = new Duel(opponents)
         this.set(duel);
     }
@@ -36,18 +41,27 @@ export class Duel {
     static set(duel: Duel): void {
         storage.set("state", duel)
     }
-    static add_vote(voter: string, receiver: i8): void {
+    static vote_for(voter: string, receiver: AccountId): void {
         assert(!voters.has(voter), "You have already voted.")
         const duel = this.get()
-        duel.opponents[receiver].vote_score = duel.opponents[receiver].vote_score + 1;
-        duel.opponents[receiver].voters.push(voter)
+        assert(duel.opponents.contains(receiver), "Opponent doesn't exist.")
+        const op = duel.opponents.get(receiver)
+        op!.vote_score = op!.vote_score + 1
+        duel.opponents.set(receiver, op!)
         this.set(duel)
         voters.add(voter)
+    }
+    static get_vote_count_for(receiver: AccountId): i32 {
+        const duel = this.get()
+        assert(duel.opponents.contains(receiver), "Opponent doesn't exist.")
+        const votes = duel.opponents.get(receiver)!.vote_score
+        return votes
     }
     static get_total_vote_count(): u32 {
         return voters.size
     } 
 
 }
+
 
 const voters = new PersistentSet<AccountId>("voter");
