@@ -4,18 +4,12 @@
   "author": "Me",
   "license": "ISC",
   "devDependencies": {
+    "@as-pect/cli": "^6.2.4",
     "near-sdk-as": "^3.2.3"
   },
   "scripts": {
-    "dev": "watch -d -n 1 'clear && yarn test:unit'",
-    "asp": "asp --verbose --nologo",
-    "test:unit": "yarn asp -f unit.spec",
     "build": "asb --target debug",
     "build:release": "asb",
-    "test": "yarn build:release && yarn test:unit && yarn test:simulate",
-    "test:simulate": "cargo test -- --nocapture",
-    "clean": "rm -rf ./build",
-    "test:debug": "node --inspect-brk ./node_modules/.bin/asp"
+    "test": "yarn build:release && npx asp --verbose --nologo"
   }
 }
-
