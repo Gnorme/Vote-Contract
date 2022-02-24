@@ -6,3 +6,12 @@ At the core, the contract sets up a challenge between pieces of media that users
 
 
 This contract is written using AssemblyScript. I was in the process of building a factory for this contract and started to run in to some issues when I decided it would be best to switch over to using Rust. I’m using this as my submission for now though. 
+
+# Deploy
+To deploy the contract, follow these steps:
+1. clone this repo locally
+2. run yarn to install dependencies
+3. run ./scripts/dev-deploy.sh and follow the on-screen instruction to deploy the contract
+
+# Usage
+Run ./scripts/run-duel.sh to simulate a duel
