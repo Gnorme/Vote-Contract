@@ -90,10 +90,7 @@ export class Duel {
     static shouldBeActive(): bool {
         //Checks if the time since start of duel is longer than roundLength then checks for winner
         if (this.isLaterThan(this.get().created_at, this.get().roundLength)) {
-            if(this.winnerDecided()) {
-                this.end()
-                return false
-            }
+            return this.end()
         }
         return true
     }
@@ -140,22 +137,29 @@ export class Duel {
         duel.overtime = true
         this.set(duel)
     }
-    static end(): void {
+    static end(): bool {
         //More logic to handle end of duel can go here
-        const duel = this.get()
-        duel.active = false
-        this.set(duel)
-        this.distributePool();
+        const ended = this.winnerDecided()
+        if(ended === true) {
+            const duel = this.get()
+            duel.active = false
+            this.set(duel)
+            this.distributePool();
+            return true
+        }
+
+        return false
     }
     //Calculates share the winner receives, and each voter receives, and sets poolDistribution
     static distributePool(): void {
         const duel = this.get()
-        assert(!duel.active, "Duel is still active")
+        assert(duel.active === false, "Duel is still active")
+        assert(duel.winner !== null, "Winner not decided?")
         //One improvement would be a sliding scale for WINNER_CUT, closer the votes = bigger cut
-        let winnerCut = duel.totalVotes * WINNER_CUT
-        duel.poolDistribution.set(duel.winner.account.toString(), winnerCut)
+        let winnerShare = duel.totalVotes * WINNER_CUT
+        duel.poolDistribution.set(duel.winner.account.toString(), winnerShare)
         let votersOfWinner = duel.winner.voters
-        let voterSharePerPoint = ((duel.totalVotes - winnerCut) / duel.winner.voteScore)
+        let voterSharePerPoint = ((duel.totalVotes - winnerShare) / duel.winner.voteScore)
         for (let i = 0; i < votersOfWinner.size; i++){
             let voter = votersOfWinner.keys()[i]
             let voteCount = votersOfWinner.get(voter)
@@ -184,4 +188,5 @@ export class Duel {
     }
 }
 export const opIDs = new PersistentSet<AccountId>("ops");
+export const owners = new PersistentSet<AccountId>("admin")
 const voterHistory = new PersistentMap<AccountId, Timestamp>("voters");

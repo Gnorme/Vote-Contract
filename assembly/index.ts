@@ -1,5 +1,7 @@
 import {context, storage, PersistentMap, RNG} from "near-sdk-as";
-import { Duel, AccountId, Opponent, MAX_OPPONENTS, Timestamp , opIDs} from "./models";
+import { Duel, AccountId, Opponent, MAX_OPPONENTS, Timestamp , opIDs, owners} from "./models";
+
+
 
 export function init(submissions: Map<AccountId, Opponent>,numOpponents: i32, lenInSeconds: Timestamp = 1200): void {
     assert(submissions.size >= numOpponents, "Not enough opponents")
@@ -8,7 +10,7 @@ export function init(submissions: Map<AccountId, Opponent>,numOpponents: i32, le
     const opponents = new PersistentMap<AccountId, Opponent>("o");
     const accounts = submissions.keys()
     let r = rng.next()
-    let last = r + 1;
+    let last: i32;
     for (let i = 0; i < numOpponents; i++) {
         const sub = submissions.get(accounts[r])
         opponents.set(accounts[r], sub)
@@ -19,7 +21,17 @@ export function init(submissions: Map<AccountId, Opponent>,numOpponents: i32, le
             r = rng.next()
         }
     }
+    owners.add(context.predecessor)
     Duel.create(opponents, lenInSeconds);
+}
+export function end_duel(): string {
+    assert_owner()
+    const ended = Duel.end()
+    if (ended) {
+        return "Duel ended"
+    } else {
+        return "No winner decided, duel still going"
+    }
 }
 export function validate_submissions(submissions: Map<AccountId, Opponent>): bool {
     assert(submissions.size < MAX_OPPONENTS, "Too many opponents")
@@ -69,6 +81,10 @@ export function get_duel(): Duel {
 }
 export function get_pool_distribution(): Map<string, number> {
     return Duel.get().poolDistribution
+}
+function assert_owner(): void {
+    const caller = context.predecessor
+    assert(owners.has(caller), "Only the owners of this contract may call this function")
 }
 function assert_data_is_valid(data: string): void {
     assert(data.includes("9gag"), "Link data is invalid.")
